@@ -1,0 +1,16 @@
+
+button {
+    border: solid 1px black;
+    border-radius: 2px;
+    display: inline-block;
+    height: 24px;
+    min-width: 100px;
+    bottom: 48px;
+    left: 48px;
+    list-style: none;
+}
+button.submit {
+    background-color: #3457c3;
+    color: #ffffff;
+    border: solid 1px black;
+}
