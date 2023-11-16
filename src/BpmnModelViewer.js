@@ -1,13 +1,12 @@
 import React, {useEffect, useRef, useState} from 'react';
 import Modeler from "bpmn-js/lib/Modeler";
 import diagramXML from './resources/newDiagram.bpmn';
-import { Mapping } from './models/bpmnElementMappingToThreats';
-import { BpmnElements } from './models/bpmnElements';
-import { SecurityPrinciples } from './models/securityPrinciples';
 import './BpmnModelViewer.css';
+import {database} from "./models/database";
 
 const BpmnModelViewer = (selectedPrinciples) => {
     const [isDiagramLoaded, setDiagramLoaded] = useState(false);
+    const [allThreatsFound, setAllThreatsFound] = useState([]);
     const canvas = document.getElementById("js-canvas");
     const modelerRef = useRef(null);
 
@@ -20,7 +19,9 @@ const BpmnModelViewer = (selectedPrinciples) => {
             keyboard: {
                 bindTo: document,
             },
-          /* additionalModules: [
+          /*
+          //would help to get rid of sidebar
+          additionalModules: [
                 {
                     palette: ["value", {}],
                     paletteProvider: ["value", {}]
@@ -133,29 +134,33 @@ const BpmnModelViewer = (selectedPrinciples) => {
             };
         }
     }, [isDiagramLoaded, canvas]);
+
+    const colorModel = (elements, color) => {
+        const modeling = modelerRef.current.get('modeling');
+        modeling.setColor(elements, { stroke: color });
+    }
     function handleSubmission() {
         console.log("Security Principles:", selectedPrinciples.selectedPrinciples);
-        console.log("Security Principles Length:", selectedPrinciples.selectedPrinciples.length);
-        const modeling = modelerRef.current.get('modeling');
-        console.log("modeling", modeling);
         const elementRegistry = modelerRef.current.get('elementRegistry');
         console.log('elementRegistry', elementRegistry);
+
+        //get all elements in the model to reset color first
         const elements = Object.values(elementRegistry._elements).map(entry => entry.element);
         console.log("elements",elements )
-        modeling.setColor(elements, { stroke: '#000000' });
+        colorModel(elements, '#000000')
 
         const colors = ['#ff2600','#ff9300', '#9437ff'];
         let elementsToColor = [];
-        for(let i = 0; i < selectedPrinciples.selectedPrinciples.length; i++){
+        selectedPrinciples.selectedPrinciples.map(principle => {
             console.log("what")
-            const e = showThreats(selectedPrinciples.selectedPrinciples[i], elementRegistry);
+            const e = visualizeThreats(principle, elementRegistry);
             console.log(e)
             elementsToColor.push(...e);
-            modeling.setColor(e, { stroke: colors[i] });
-        }
+           // modeling.setColor(e, { stroke: colors[0] });
+        })
 
         console.log("elementsToColor", elementsToColor);
-       // modeling.setColor(elementsToColor, { stroke: '#ff2600' });
+        colorModel(elementsToColor,'#ff2600');
     }
 
     async function getModel() {
@@ -167,52 +172,99 @@ const BpmnModelViewer = (selectedPrinciples) => {
         }
     }
 
-    function showThreats(securityPrinciple, elementRegistry){
-        //Create list of all defined bpmn elements
-        const bpmnElements = Object.values(BpmnElements);
-
+    //show all elements of threats that belong to one security principle
+    const visualizeThreats = (securityPrinciple, elementRegistry) => {
         console.log(securityPrinciple);
 
+        //filters out all threats of the principle
+        const entry = database.find(e => e.principle === securityPrinciple);
+        const threats = entry.threats;
+
+        let threatsFound = [];
         let elementsToColor = [];
+        threats.map(threat => {
+            console.log("threat", threat);
+            //elements that are applicable to threat
+            if(threat.elements){
+                //all bpmn element types that belong to the threat type
+                const bpmnElements = threat.elements;
 
-        for (let i = 0; i < bpmnElements.length; i++) {
-
-            let elements;
-            //only for message events -> not timers etc.
-            if (bpmnElements[i] === 'IntermediateCatchEvent' || bpmnElements[i] === "StartEvent") {
-                elements = elementRegistry.filter(e => {
-                    if (e.type === 'bpmn:IntermediateCatchEvent' || e.type === 'bpmn:StartEvent') {
-                        return e.businessObject.eventDefinitions.some(
-                            (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
-                        );
+                let elements = [];
+                bpmnElements.map(bpmnElement => {
+                    console.log(bpmnElement)
+                    if (bpmnElement === 'IntermediateCatchEvent' || bpmnElement === "StartEvent") {
+                        elements = elementRegistry.filter(e => {
+                            if (e.type === 'bpmn:IntermediateCatchEvent' || e.type === 'bpmn:StartEvent') {
+                                return e.businessObject.eventDefinitions.some(
+                                    (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
+                                );
+                            }
+                            return false;
+                        });
+                    } else {
+                        //filters out all elements of the same type (e.g. UserTask) in the provided bpmn model
+                        elements = elementRegistry.filter(e => e.type === 'bpmn:' + bpmnElement);
                     }
-                    return false;
+                    elementsToColor.push(...elements)
                 });
-            } else {
-                elements = elementRegistry.filter(e => e.type === 'bpmn:' + bpmnElements[i]);
-            }
-
-            if (elements.length >= 1) {
-                const element = Mapping.filter(e => e.element === bpmnElements[i]);
-                const threats = element[0].threats;
-                const threatsWithPrinciple = threats.filter(t => t.securityPrinciple === securityPrinciple);
-                if (threatsWithPrinciple.length >= 1) {
-                    console.log(element[0].element)
-                }
-                let j;
-                for (j = 0; j < threatsWithPrinciple.length; j++) {
-                    console.log("Threat " + (j + 1) + " " + threatsWithPrinciple[j].threat);
-                }
-                if (threatsWithPrinciple.length >= 1) {
-                    for (let j = 0; j < elements.length; j++) {
-                        elementsToColor.push(elements[j]);
-                    }
+                if(elementsToColor.length > 0){
+                    threatsFound.push(threat.threat);
                 }
             }
-        }
+        });
 
+        //add only threats that were actually found in diagram
+        setAllThreatsFound((prevThreats) => [...prevThreats, {
+            principle: securityPrinciple,
+            threats: threatsFound
+        }])
+        console.log("THREATS FOUND:: ", threatsFound);
         return elementsToColor;
 
+    }
+
+
+    //show all elements of one threat
+    const showElementsOfThreat = (securityPrinciple, t) => {
+        const elementRegistry = modelerRef.current.get('elementRegistry');
+        const elements = Object.values(elementRegistry._elements).map(entry => entry.element);
+        colorModel(elements, '#000000');
+
+        console.log("ElementsRegistry", elementRegistry);
+
+        const p = database.find(entry => entry.principle === securityPrinciple);
+        console.log("P", p)
+        //needed to find threat with elements
+        const threat = p.threats.find(e => e.threat === t);
+        console.log("threat", threat);
+
+
+        let elementsToColor = [];
+            //elements that are applicable to threat
+            if(threat.elements){
+                const bpmnElements = threat.elements;
+                console.log("bpmnElements", bpmnElements)
+                let elements = [];
+                bpmnElements.map(bpmnElement => {
+                    console.log(bpmnElement)
+                    if (bpmnElement === 'IntermediateCatchEvent' || bpmnElement === "StartEvent") {
+                        elements = elementRegistry.filter(e => {
+                            if (e.type === 'bpmn:IntermediateCatchEvent' || e.type === 'bpmn:StartEvent') {
+                                return e.businessObject.eventDefinitions.some(
+                                    (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
+                                );
+                            }
+                            return false;
+                        });
+                    } else {
+                        //filters out all elements of the same type (e.g. UserTask) in the provided bpmn model
+                        elements = elementRegistry.filter(e => e.type === 'bpmn:' + bpmnElement);
+                    }
+                    elementsToColor.push(...elements)
+                });
+
+            }
+        colorModel(elementsToColor, '#9437ff');
     }
 
     return (
@@ -239,6 +291,22 @@ const BpmnModelViewer = (selectedPrinciples) => {
             <button className={"submit"} onClick={() => handleSubmission()}>
                 Show Threats
             </button>
+            <h1>
+                Threats found:
+            </h1>
+            {allThreatsFound.map(p => (
+                <div key={p.principle}>
+                <h2>
+                    {Object.values(p.principle)}
+                </h2>
+                    {p.threats.map(t => (
+                        <button key={t.toString()} onClick={() => showElementsOfThreat(p.principle, t)}>
+                            {t}
+                        </button>
+                        ))}
+
+                </div>
+            ))}
 
            {/*  <ul className="buttons">
                 <li>download</li>
