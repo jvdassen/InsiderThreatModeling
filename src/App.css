@@ -1,153 +1,164 @@
 .App {
-  text-align: center;
-  height: 100%;
-  width: 100%
+    text-align: center;
+    height: 100%;
+    width: 100%
 }
 
 .App-logo {
-  height: 40vmin;
-  pointer-events: none;
+    height: 40vmin;
+    pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+    .App-logo {
+        animation: App-logo-spin infinite 20s linear;
+    }
 }
 
 .App-header {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  background-color: #172554;
-  min-height: 10vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(8px + 2vmin);
-  color: white;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background-color: #172554;
+    min-height: 8vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(4px + 2vmin);
+    color: white;
 }
 
 .App-link {
-  color: #61dafb;
+    color: #61dafb;
 }
 
-.text{
-  text-align: left;
-  padding: 16px 16px 16px 48px;
+.text {
+    text-align: left;
+    padding: 16px 16px 16px 48px;
 }
 
-.flex{
-  display: flex;
-}
-.flex-column{
-  display: flex;
-  flex-direction: column;
+.flex {
+    display: flex;
 }
 
-.select-box{
-  max-width: 30%;
+.flex-column {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+
 }
 
-.spacer{
-  height: 16px;
+.select-box {
+    width: 300px;
+    align-content: center;
+}
+
+.parent-container {
+    position: relative;
+    /* Additional styles for the container if needed */
+}
+
+.threat-box {
+    position: absolute;
+    top: 0;
+    left: 24px;
+    text-align: left;
+}
+
+.spacer {
+    height: 16px;
 }
 
 body, html {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  height: 100%;
-  padding: 0;
-  margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    height: 100%;
+    padding: 0;
+    margin: 0;
 }
 
 a:link {
-  text-decoration: none;
+    text-decoration: none;
 }
 
 .content,
 .content > div {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .content > .message {
-  text-align: center;
-  display: table;
-  font-size: 16px;
+    text-align: center;
+    display: table;
+    font-size: 16px;
 }
 
 .content > .message .note {
-  vertical-align: middle;
-  text-align: center;
-  display: table-cell;
-  height: 80px;
+    vertical-align: middle;
+    text-align: center;
+    display: table-cell;
+    height: 80px;
 }
 
 .content .error .details {
-  max-width: 500px;
-  font-size: 12px;
-  margin: 20px auto;
-  text-align: left;
+    max-width: 500px;
+    font-size: 12px;
+    margin: 20px auto;
+    text-align: left;
 }
 
 .content .error pre {
-  border: solid 1px #CCC;
-  background: #EEE;
-  padding: 10px;
+    border: solid 1px #CCC;
+    background: #EEE;
+    padding: 10px;
 }
 
 .content:not(.with-error) .error,
 .content.with-error .intro,
 .content.with-diagram .intro {
-  display: none;
+    display: none;
 }
 
 
 .content .canvas,
 .content.with-error .canvas {
-  height: 90vh;
-  width: 100%;
-  visibility: hidden;
+    height: 80vh;
+    width: 100%;
+    visibility: hidden;
 }
 
 .content.with-diagram .canvas {
-  visibility: visible;
+    visibility: visible;
 }
 
 .buttons {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
 
-  padding: 0;
-  margin: 0;
-  list-style: none;
+    padding: 0;
+    margin: 0;
+    list-style: none;
 }
 
 .buttons > li {
-  display: inline-block;
-  margin-right: 10px;
+    display: inline-block;
+    margin-right: 10px;
 }
+
 .buttons > li > a {
-  background: #DDD;
-  border: solid 1px #666;
-  display: inline-block;
-  padding: 5px;
+    background: #DDD;
+    border: solid 1px #666;
+    display: inline-block;
+    padding: 5px;
 
 }
 
 .buttons a {
-  opacity: 0.3;
+    opacity: 0.3;
 }
 
 .buttons a.active {
-  opacity: 1.0;
+    opacity: 1.0;
 
-}
-
-.highlight-overlay {
-  background-color: green; /* color elements as green */
-  opacity: 0.4;
-  pointer-events: none; /* no pointer events, allows clicking through onto the element */
 }

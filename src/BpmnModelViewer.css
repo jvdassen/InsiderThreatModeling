@@ -9,8 +9,10 @@ button {
     left: 48px;
     list-style: none;
 }
+
 button.submit {
     background-color: #3457c3;
     color: #ffffff;
     border: solid 1px black;
+    margin: 10px;
 }

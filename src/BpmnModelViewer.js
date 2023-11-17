@@ -3,31 +3,40 @@ import Modeler from "bpmn-js/lib/Modeler";
 import diagramXML from './resources/newDiagram.bpmn';
 import './BpmnModelViewer.css';
 import {database} from "./models/database";
+import {Report} from "./Report";
 
 const BpmnModelViewer = (selectedPrinciples) => {
     const [isDiagramLoaded, setDiagramLoaded] = useState(false);
     const [allThreatsFound, setAllThreatsFound] = useState([]);
+    const [currentThreatAndPrinciple, setCurrentThreatAndPrinciple] = useState({});
+    const [elementsConnectedToThreat, setElementsConnectedToCurrentThreat] = useState([]);
+    //elements in currently selected threat
+    const [selectedElements, setSelectedElements] = useState([]);
+    //subset of selected elements: all that are marked as important for the threat
+    const [finalElementSelection, setFinalElementSelection] = useState([]);
+    const [reportShown, setReportShown] = useState(false);
+    const [submitted, setSubmitted] = useState(false)
+
     const canvas = document.getElementById("js-canvas");
     const modelerRef = useRef(null);
 
-                                
     useEffect(() => {
         const container = document.getElementById('js-drop-zone');
 
-        modelerRef.current  = new Modeler({
+        modelerRef.current = new Modeler({
             container: canvas,
             keyboard: {
                 bindTo: document,
             },
-          /*
-          //would help to get rid of sidebar
-          additionalModules: [
+            //would help to get rid of sidebar
+            additionalModules: [
                 {
                     palette: ["value", {}],
                     paletteProvider: ["value", {}]
                 }
-            ]*/
+            ]
         });
+
         function createNewDiagram() {
             openDiagram(diagramXML);
         }
@@ -62,6 +71,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
                 reader.readAsText(file);
             }
+
             function handleDragOver(e) {
                 e.stopPropagation();
                 e.preventDefault();
@@ -104,7 +114,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
             const exportArtifacts = debounce(async function () {
                 try {
-                    const { svg } = await modelerRef.current.saveSVG();
+                    const {svg} = await modelerRef.current.saveSVG();
                     setEncoded(downloadSvgLink, 'diagram.svg', svg);
                 } catch (err) {
                     console.error('Error happened saving svg: ', err);
@@ -112,7 +122,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 }
 
                 try {
-                    const { xml } = await modelerRef.current.saveXML({ format: true });
+                    const {xml} = await modelerRef.current.saveXML({format: true});
                     setEncoded(downloadLink, 'diagram.bpmn', xml);
                 } catch (err) {
                     console.error('Error happened saving XML: ', err);
@@ -122,6 +132,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
             modelerRef.current.on('commandStack.changed', exportArtifacts);
         });
+
         function debounce(fn, timeout) {
             let timer;
 
@@ -136,36 +147,26 @@ const BpmnModelViewer = (selectedPrinciples) => {
     }, [isDiagramLoaded, canvas]);
 
     const colorModel = (elements, color) => {
+        const elementRegistry = modelerRef.current.get('elementRegistry');
         const modeling = modelerRef.current.get('modeling');
-        modeling.setColor(elements, { stroke: color });
+        const allElements = Object.values(elementRegistry._elements).map(entry => entry.element);
+        modeling.setColor(allElements, {stroke: '#000000'});
+        modeling.setColor(elements, {stroke: color});
     }
-    function handleSubmission() {
+
+    function onShowThreats() {
         console.log("Security Principles:", selectedPrinciples.selectedPrinciples);
         const elementRegistry = modelerRef.current.get('elementRegistry');
         console.log('elementRegistry', elementRegistry);
 
-        //get all elements in the model to reset color first
-        const elements = Object.values(elementRegistry._elements).map(entry => entry.element);
-        console.log("elements",elements )
-        colorModel(elements, '#000000')
-
-        const colors = ['#ff2600','#ff9300', '#9437ff'];
-        let elementsToColor = [];
         selectedPrinciples.selectedPrinciples.map(principle => {
-            console.log("what")
-            const e = visualizeThreats(principle, elementRegistry);
-            console.log(e)
-            elementsToColor.push(...e);
-           // modeling.setColor(e, { stroke: colors[0] });
+            visualizeThreats(principle, elementRegistry);
         })
-
-        console.log("elementsToColor", elementsToColor);
-        colorModel(elementsToColor,'#ff2600');
     }
 
     async function getModel() {
         try {
-            const { xml } = await modelerRef.current.saveXML({ format: true });
+            const {xml} = await modelerRef.current.saveXML({format: true});
             return xml;
         } catch (err) {
             console.error('Error happened saving XML: ', err);
@@ -174,27 +175,32 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
     //show all elements of threats that belong to one security principle
     const visualizeThreats = (securityPrinciple, elementRegistry) => {
-        console.log(securityPrinciple);
-
         //filters out all threats of the principle
         const entry = database.find(e => e.principle === securityPrinciple);
         const threats = entry.threats;
 
         let threatsFound = [];
-        let elementsToColor = [];
         threats.map(threat => {
-            console.log("threat", threat);
+            let elementsInModel = [];
             //elements that are applicable to threat
-            if(threat.elements){
+            if (threat.elements) {
                 //all bpmn element types that belong to the threat type
                 const bpmnElements = threat.elements;
 
                 let elements = [];
                 bpmnElements.map(bpmnElement => {
-                    console.log(bpmnElement)
-                    if (bpmnElement === 'IntermediateCatchEvent' || bpmnElement === "StartEvent") {
+                    if (bpmnElement === 'IntermediateCatchEvent') {
                         elements = elementRegistry.filter(e => {
-                            if (e.type === 'bpmn:IntermediateCatchEvent' || e.type === 'bpmn:StartEvent') {
+                            if (e.type === 'bpmn:IntermediateCatchEvent') {
+                                return e.businessObject.eventDefinitions.some(
+                                    (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
+                                );
+                            }
+                            return false;
+                        });
+                    } else if (bpmnElement === "StartEvent") {
+                        elements = elementRegistry.filter(e => {
+                            if (e.type === 'bpmn:StartEvent') {
                                 return e.businessObject.eventDefinitions.some(
                                     (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
                                 );
@@ -205,70 +211,93 @@ const BpmnModelViewer = (selectedPrinciples) => {
                         //filters out all elements of the same type (e.g. UserTask) in the provided bpmn model
                         elements = elementRegistry.filter(e => e.type === 'bpmn:' + bpmnElement);
                     }
-                    elementsToColor.push(...elements)
+                    //if there is an element in the elementregistry for the threat, add the threat to threatsFound
+                    if (elements.length > 0) {
+                        elementsInModel.push(...elements);
+                    }
                 });
-                if(elementsToColor.length > 0){
-                    threatsFound.push(threat.threat);
-                }
+
+            }
+            if (elementsInModel.length > 0) {
+                threatsFound.push({threat: threat.threat, elements: elementsInModel});
             }
         });
-
         //add only threats that were actually found in diagram
         setAllThreatsFound((prevThreats) => [...prevThreats, {
             principle: securityPrinciple,
             threats: threatsFound
         }])
-        console.log("THREATS FOUND:: ", threatsFound);
-        return elementsToColor;
-
     }
-
-
     //show all elements of one threat
     const showElementsOfThreat = (securityPrinciple, t) => {
-        const elementRegistry = modelerRef.current.get('elementRegistry');
-        const elements = Object.values(elementRegistry._elements).map(entry => entry.element);
-        colorModel(elements, '#000000');
+        setCurrentThreatAndPrinciple({threat: t, principle: securityPrinciple});
+        const threatsOfPrinciple = allThreatsFound.find(p => p.principle === securityPrinciple);
+        const elementsConnectedToThreat = threatsOfPrinciple.threats.find(p => p.threat === t);
+        let elementsToColor = elementsConnectedToThreat.elements;
+        colorModel(elementsToColor, '#f1626a');
+        setElementsConnectedToCurrentThreat(elementsToColor);
+    }
 
-        console.log("ElementsRegistry", elementRegistry);
-
-        const p = database.find(entry => entry.principle === securityPrinciple);
-        console.log("P", p)
-        //needed to find threat with elements
-        const threat = p.threats.find(e => e.threat === t);
-        console.log("threat", threat);
-
-
+    const onShowReport = () => {
         let elementsToColor = [];
-            //elements that are applicable to threat
-            if(threat.elements){
-                const bpmnElements = threat.elements;
-                console.log("bpmnElements", bpmnElements)
-                let elements = [];
-                bpmnElements.map(bpmnElement => {
-                    console.log(bpmnElement)
-                    if (bpmnElement === 'IntermediateCatchEvent' || bpmnElement === "StartEvent") {
-                        elements = elementRegistry.filter(e => {
-                            if (e.type === 'bpmn:IntermediateCatchEvent' || e.type === 'bpmn:StartEvent') {
-                                return e.businessObject.eventDefinitions.some(
-                                    (eventDefinition) => eventDefinition.$type === 'bpmn:MessageEventDefinition'
-                                );
-                            }
-                            return false;
-                        });
-                    } else {
-                        //filters out all elements of the same type (e.g. UserTask) in the provided bpmn model
-                        elements = elementRegistry.filter(e => e.type === 'bpmn:' + bpmnElement);
-                    }
-                    elementsToColor.push(...elements)
-                });
+        setReportShown(true);
+        finalElementSelection.map(e => {
+            elementsToColor.push(...e.elements)
+        })
+        console.log("EES", elementsToColor);
+        colorModel(elementsToColor, '#f1626a');
+    }
 
+    const onThreatSelected = (principleSelected, threatSelected) => {
+        setSubmitted(false);
+        if (finalElementSelection.find(e => e.threat === threatSelected.threat)) {
+            setSelectedElements(finalElementSelection.find(e => e.threat === threatSelected.threat).elements)
+        } else {
+            setSelectedElements([]);
+        }
+        showElementsOfThreat(principleSelected.principle, threatSelected.threat);
+    }
+
+    const onElementSelected = (element) => {
+        if (selectedElements.includes(element)) {
+            setSelectedElements((prevSelectedElements) => {
+                if (prevSelectedElements.includes(element)) {
+                    // If the element is already in the array, remove it using filter
+                    return prevSelectedElements.filter((item) => item !== element);
+                }
+            })
+        } else {
+            setSelectedElements([...selectedElements, element]);
+        }
+    }
+
+    const onSubmit = () => {
+        //prevent user from inserting threats more than once, just update entry
+        if (finalElementSelection.find(e => e.threat === currentThreatAndPrinciple.threat)) {
+            const currentEntries = finalElementSelection.filter(e => e.threat !== currentThreatAndPrinciple.threat);
+            setFinalElementSelection([...currentEntries, {
+                principle: currentThreatAndPrinciple.principle,
+                threat: currentThreatAndPrinciple.threat,
+                elements: selectedElements
             }
-        colorModel(elementsToColor, '#9437ff');
+            ]);
+        } else {
+            setFinalElementSelection([...finalElementSelection, {
+                principle: currentThreatAndPrinciple.principle,
+                threat: currentThreatAndPrinciple.threat,
+                elements: selectedElements
+            }])
+        }
+        setSubmitted(true);
+        //TODO: go to next threat
+        /*const index = allThreatsFound.indexOf(selectedThreat);
+        console.log("index", index)
+        setSelectedThreat(allThreatsFound[index + 1]);
+         */
     }
 
     return (
-        <>
+        <div className="parent-container">
             <div className="content" id="js-drop-zone">
                 <div className="message intro">
                     <div className="note">
@@ -288,27 +317,85 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 </div>
                 <div className="canvas" id="js-canvas"></div>
             </div>
-            <button className={"submit"} onClick={() => handleSubmission()}>
-                Show Threats
-            </button>
-            <h1>
-                Threats found:
-            </h1>
-            {allThreatsFound.map(p => (
-                <div key={p.principle}>
-                <h2>
-                    {Object.values(p.principle)}
-                </h2>
-                    {p.threats.map(t => (
-                        <button key={t.toString()} onClick={() => showElementsOfThreat(p.principle, t)}>
-                            {t}
+            {allThreatsFound.length > 0 ? (
+
+                <div className="threat-box">
+                    <h1>
+                        Threats found:
+                    </h1>
+                    {allThreatsFound.map(p => (
+                        <div key={p.principle} style={{alignContent: "center"}}>
+                            <h2>
+                                {Object.values(p.principle)}
+                            </h2>
+                            <div className="flex-column">
+                                {p.threats.map(t => (
+                                    <button
+                                        style={{
+                                            backgroundColor: currentThreatAndPrinciple.threat === t.threat ? '#f1626a' : null,
+                                            margin: "10px"
+                                        }}
+                                        key={t.threat.toString()}
+                                        onClick={() => onThreatSelected(p, t)}>
+                                        {t.threat}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                    <h1>
+                        Select important threats:
+                    </h1>
+                    <text>
+                        Please revise the threats and decide for each threat which elements in the business process
+                        could be problematic for the threats.
+                    </text>
+
+                    <h2>
+                        {currentThreatAndPrinciple.threat}
+                    </h2>
+                    <div className="flex-column">
+                        {!submitted ? elementsConnectedToThreat.map(element => (
+                                    <button
+                                        key={element.id}
+                                        style={{
+                                            backgroundColor: selectedElements.includes(element) ? '#709eff' : null,
+                                            margin: "10px"
+                                        }}
+                                        onClick={() => onElementSelected(element)}>
+                                        {element.businessObject.name ? element.businessObject.name : element.id}
+                                    </button>
+                                )
+                            )
+                            : null}
+                    </div>
+
+                    {!submitted ?
+                        <button className="submit" onClick={() => onSubmit()}>
+                            Submit
                         </button>
-                        ))}
-
+                        : null}
+                    <button className="submit" onClick={() => onShowReport()}>
+                        Show Report
+                    </button>
                 </div>
-            ))}
+            ) : (
+                <button className={"submit"} onClick={() => onShowThreats()}>
+                    Show Threats
+                </button>
+            )}
+            {reportShown ?
+                <Report data={finalElementSelection}/>
+                : null}
 
-           {/*  <ul className="buttons">
+        </div>
+    );
+};
+
+export default BpmnModelViewer;
+
+
+{/*  <ul className="buttons">
                 <li>download</li>
                 <li>
                     <a id="js-download-diagram" href title="download BPMN diagram">
@@ -321,9 +408,5 @@ const BpmnModelViewer = (selectedPrinciples) => {
                     </a>
                 </li>
 
-             </ul>*/}
-        </>
-    );
-};
-
-export default BpmnModelViewer;
+             </ul>*/
+}
