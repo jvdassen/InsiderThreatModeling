@@ -57,7 +57,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
             }
         }
 
-        function registerFileDrop(callback) {
+        function registerFileDrop(container, callback) {
             function handleFileSelect(e) {
                 e.stopPropagation();
                 e.preventDefault();
