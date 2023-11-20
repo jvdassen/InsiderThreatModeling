@@ -1,7 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
 import diagramXML from './resources/newDiagram.bpmn';
-import './BpmnModelViewer.css';
 import {database} from "./models/database";
 import {Report} from "./Report";
 
@@ -47,10 +46,13 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 container.classList.remove('with-error');
                 container.classList.add('with-diagram');
                 setDiagramLoaded(true);
+
+                //Fit the viewport
+                const canvas = modelerRef.current.get("canvas");
+                canvas.zoom("fit-viewport");
             } catch (err) {
                 container.classList.remove('with-diagram');
                 container.classList.add('with-error');
-
                 container.find('.error pre').text(err.message);
 
                 console.error(err);
@@ -230,6 +232,13 @@ const BpmnModelViewer = (selectedPrinciples) => {
             principle: securityPrinciple,
             threats: threatsFound
         }])
+        if (allThreatsFound.length > 0) {
+            console.log("First threat: ", allThreatsFound[0]);
+            setCurrentThreatAndPrinciple({
+                threat: allThreatsFound[0].threats[0].threat,
+                principle: allThreatsFound[0].principle
+            })
+        }
     }
     //show all elements of one threat
     const showElementsOfThreat = (securityPrinciple, t) => {
@@ -237,7 +246,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
         const threatsOfPrinciple = allThreatsFound.find(p => p.principle === securityPrinciple);
         const elementsConnectedToThreat = threatsOfPrinciple.threats.find(p => p.threat === t);
         let elementsToColor = elementsConnectedToThreat.elements;
-        colorModel(elementsToColor, '#f1626a');
+        colorModel(elementsToColor, '#ff6600');
         setElementsConnectedToCurrentThreat(elementsToColor);
     }
 
@@ -248,7 +257,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
             elementsToColor.push(...e.elements)
         })
         console.log("EES", elementsToColor);
-        colorModel(elementsToColor, '#f1626a');
+        colorModel(elementsToColor, '#ff6600');
     }
 
     const onThreatSelected = (principleSelected, threatSelected) => {
@@ -302,7 +311,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
     return (
         <div className="parent-container">
             {reportShown ?
-
                 <Report data={finalElementSelection}/>
                 : (
                     <>
@@ -324,74 +332,85 @@ const BpmnModelViewer = (selectedPrinciples) => {
                             </div>
                             <div className="canvas" id="js-canvas"></div>
                         </div>
-                        {allThreatsFound.length > 0 ? (
-
-                            <div className="threat-box">
-                                <h1>
-                                    Threats found:
-                                </h1>
-                                {allThreatsFound.map(p => (
-                                    <div key={p.principle}>
-                                        <h2>
-                                            {Object.values(p.principle)}
-                                        </h2>
-                                        <div className="flex-column">
-                                            {p.threats.map(t => (
-                                                <button
-                                                    style={{
-                                                        backgroundColor: currentThreatAndPrinciple.threat === t.threat ? '#f1626a' : null,
-                                                        margin: "10px"
-                                                    }}
-                                                    key={t.threat.toString()}
-                                                    onClick={() => onThreatSelected(p, t)}>
-                                                    {t.threat}
-                                                </button>
-                                            ))}
+                        {allThreatsFound.length > 0 && !reportShown ? (
+                            <>
+                                <div className="threat-box">
+                                    <h1>
+                                        Threats found:
+                                    </h1>
+                                    {allThreatsFound.map(p => (
+                                        <div key={p.principle}>
+                                            <h2>
+                                                {Object.values(p.principle)}
+                                            </h2>
+                                            <div className="flex-column">
+                                                {p.threats.map(t => (
+                                                    <button
+                                                        style={{
+                                                            backgroundColor: currentThreatAndPrinciple.threat === t.threat ? '#ff6600' : null,
+                                                            margin: "8px"
+                                                        }}
+                                                        key={t.threat.toString()}
+                                                        onClick={() => onThreatSelected(p, t)}>
+                                                        {t.threat}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                                <h1>
-                                    Select important threats:
-                                </h1>
-                                <text>
-                                    Please revise the threats and decide for each threat which elements in the business
-                                    process
-                                    could be problematic for the threats.
-                                </text>
+                                    ))}
+                                </div>
+                                <div className="select-elements">
+                                    <div className="spacer"/>
+                                    <h1>
+                                        Select BPMN elements:
+                                    </h1>
+                                    <text>
+                                        Please revise the threats and decide for each threat which elements in the
+                                        business process that could be problematic for the threats.
+                                    </text>
 
-                                <h2>
-                                    {currentThreatAndPrinciple.threat}
-                                </h2>
-                                <div className="flex-column">
-                                    {!submitted ? elementsConnectedToThreat.map(element => (
+                                    <h2>
+                                        {currentThreatAndPrinciple.threat}
+                                    </h2>
+
+                                    {!submitted ?
+                                        <div
+                                            className="multi-select">                                                {elementsConnectedToThreat.map(element => (
                                                 <button
+                                                    className="multi-select-box"
                                                     key={element.id}
-                                                    style={{
-                                                        backgroundColor: selectedElements.includes(element) ? '#709eff' : null,
-                                                        margin: "10px"
-                                                    }}
                                                     onClick={() => onElementSelected(element)}>
+                                                    <div className="check-box">
+                                                        {selectedElements.includes(element) ? (
+                                                            <div className="check-box-fill"/>
+                                                        ) : null}
+
+                                                    </div>
                                                     {element.businessObject.name ? element.businessObject.name : element.id}
                                                 </button>
                                             )
-                                        )
-                                        : null}
-                                </div>
+                                        )}
+                                            <button className="submit" onClick={() => onSubmit()}>
+                                                Submit
+                                            </button>
 
-                                {!submitted ?
-                                    <button className="submit" onClick={() => onSubmit()}>
-                                        Submit
-                                    </button>
-                                    : null}
-                                <button className="submit" onClick={() => onShowReport()}>
+                                        </div>
+                                        :
+                                        null}
+
+                                </div>
+                                <button className="report" onClick={() => onShowReport()}>
                                     Show Report
                                 </button>
-                            </div>
+                            </>
                         ) : (
                             <button className={"submit"} onClick={() => onShowThreats()}>
                                 Show Threats
                             </button>
+
                         )}
+
+
                     </>)}
         </div>
     );

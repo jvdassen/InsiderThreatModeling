@@ -49,13 +49,12 @@ function App() {
                             Please select the security principles that are the most important ones for the process you
                             would like to
                         </div>
+                        <div className="spacer"/>
                         <div className="select-box">
                             <div className="flex-column">
-                                <div className="spacer"/>
-                                <div className="spacer"/>
                                 <button style={{
                                     backgroundColor: isConfidentialitySelected ? '#709eff' : null,
-                                    margin: "10px"
+                                    margin: "8px"
                                 }}
                                         onClick={() => {
                                             setIsConfidentialitySelected(!isConfidentialitySelected)
@@ -64,7 +63,7 @@ function App() {
                                 </button>
                                 <button style={{
                                     backgroundColor: isIntegritySelected ? '#709eff' : null,
-                                    margin: "10px"
+                                    margin: "8px"
                                 }}
                                         onClick={() => {
                                             setIsIntegritySelected(!isIntegritySelected)
@@ -73,7 +72,7 @@ function App() {
                                 </button>
                                 <button style={{
                                     backgroundColor: isAvailabilitySelected ? '#709eff' : null,
-                                    margin: "10px"
+                                    margin: "8px"
                                 }}
                                         onClick={() => {
                                             setIsAvailabilitySelected(!isAvailabilitySelected)
@@ -82,7 +81,7 @@ function App() {
                                 </button>
                                 <button style={{
                                     backgroundColor: isAccountabilitySelected ? '#709eff' : null,
-                                    margin: "10px"
+                                    margin: "8px"
                                 }}
                                         onClick={() => {
                                             setIsAccountabilitySelected(!isAccountabilitySelected)
@@ -96,9 +95,9 @@ function App() {
                                     }}>
                                     {SecurityPrinciples.authenticity}
                                 </button>
-                                <div className="spacer"/>
                             </div>
                         </div>
+                        <div className="spacer"/>
                         <button className={"submit"} onClick={handleSubmit}>
                             Submit
                         </button>

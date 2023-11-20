@@ -40,6 +40,8 @@
     display: flex;
     align-items: center;
     flex-direction: column;
+    width: 75%;
+    float: right;
 }
 
 .flex-left {
@@ -47,7 +49,8 @@
     flex-direction: column;
     text-align: left;
     padding-left: 400px;
-    padding-top: 20px;
+    padding-top: 24px;
+    padding-bottom: 48px;
 }
 
 
@@ -56,6 +59,10 @@
     flex-direction: column;
     width: 300px;
     align-content: center;
+
+    :hover {
+        cursor: pointer;
+    }
 }
 
 .select-box {
@@ -73,6 +80,16 @@
     top: 0;
     left: 24px;
     text-align: left;
+}
+
+.select-elements {
+    display: flex;
+    align-items: start;
+    flex-direction: column;
+    width: 75%;
+    float: right;
+    text-align: left;
+    justify-content: left;
 }
 
 .spacer {
@@ -114,7 +131,6 @@ a:link {
 .content .error .details {
     max-width: 500px;
     font-size: 12px;
-    margin: 20px auto;
     text-align: left;
 }
 
@@ -133,9 +149,13 @@ a:link {
 
 .content .canvas,
 .content.with-error .canvas {
-    height: 80vh;
-    width: 100%;
+    height: 60vh;
+    width: 76%;
+    float: right;
     visibility: hidden;
+    border-bottom: #bfbfbf solid 1px;
+    border-left: #bfbfbf solid 1px;
+    padding: 12px;
 }
 
 .content.with-diagram .canvas {
@@ -171,5 +191,110 @@ a:link {
 
 .buttons a.active {
     opacity: 1.0;
+
+}
+
+button {
+    border: solid 1px black;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    border-radius: 4px;
+    background-color: #eeeeee;
+    display: inline-block;
+    height: 32px;
+    min-width: 100px;
+    list-style: none;
+}
+
+button.submit {
+    background-color: #3457c3;
+    color: #ffffff;
+    border: solid 1px black;
+    margin: 10px;
+}
+
+button.report {
+    background-color: #3457c3;
+    color: #ffffff;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 0;
+    margin: 0;
+    width: 48px;
+}
+
+button.back {
+    position: fixed;
+    top: 90px;
+    left: 30px;
+    padding: 0;
+    margin: 0;
+}
+
+.multi-select {
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    align-content: center;
+
+    :hover {
+        cursor: pointer;
+        background-color: #d9e3ff;
+    }
+}
+
+
+button.multi-select-box {
+    border: #eeeeee solid;
+    border-width: 1px 0px 0px 0px;
+    text-align: left;
+    background-color: white;
+    border-radius: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 40px;
+}
+
+.check-box {
+    border: #eeeeee solid 1px;
+    border-radius: 2px;
+    height: 10px;
+    width: 10px;
+    margin: 10px;
+}
+
+.check-box-fill {
+    background-color: #172554;
+    height: 8px;
+    width: 8px;
+    border-radius: 2px;
+    margin: 1px;
+}
+
+.drop-down-box {
+    display: flex;
+    flex-direction: column;
+    width: 360px;
+    align-content: center;
+
+    :hover {
+        cursor: pointer;
+    }
+}
+
+.drop-down-item {
+    border: 2px solid;
+    border-radius: 4px;
+    text-align: left;
+    background-color: white;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    height: 40px;
+    justify-content: space-between;
+    margin: 4px;
+    padding: 4px 8px 4px 8px;
 
 }

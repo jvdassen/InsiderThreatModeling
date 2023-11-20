@@ -1,11 +1,13 @@
 import {SecurityPrinciples} from "./models/securityPrinciples";
 import {useEffect, useState} from "react";
+import {ArrowSVG} from "./resources/ArrowSVG";
 
 export const Report = (data) => {
     const securityPrinciples = Object.values(SecurityPrinciples);
     console.log(data);
     const [rankingThreats, setRankingThreats] = useState([])
-    const [rankingElements, setRankingOfElements] = useState([])
+    const [rankingElements, setRankingOfElements] = useState([]);
+    const color = ['#ff0000', '#e50000', '#ba0000', '#8d0000', '#6a0000']
 
     useEffect(() => {
         //THREATS
@@ -57,17 +59,24 @@ export const Report = (data) => {
     return (
         <div className="flex-left">
             <div className="spacer"/>
-            <h1>Threat Ranking</h1>
+            {/* <h1>Threat Ranking</h1>
             {
                 rankingThreats.map((threat, index) => (
                     <div>{(index + 1) + ". " + threat.threat + " (" + threat.count + ")"}</div>
                 ))}
-            <div className="spacer"/>
+            <div className="spacer"/>*/}
             <h1>BPMN Element Ranking</h1>
-            {
-                rankingElements.map((threat, index) => (
-                    <div>{(index + 1) + ". " + threat.element + " (" + threat.count + ")"}</div>
-                ))}
+            <div className="drop-down-box">
+                {
+                    rankingElements.map((threat, index) => (
+                        <div
+                            className="drop-down-item" style={{borderColor: color[index]}}>
+                            {(index + 1) + ". " + threat.element + " (" + threat.count + ")"}
+                            <ArrowSVG/>
+                        </div>
+                    ))}
+            </div>
+
             <div className="spacer"/>
             <div className="spacer"/>
             <div className="spacer"/>
