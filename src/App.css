@@ -42,6 +42,15 @@
     flex-direction: column;
 }
 
+.flex-left {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    padding-left: 400px;
+    padding-top: 20px;
+}
+
+
 .flex-column {
     display: flex;
     flex-direction: column;

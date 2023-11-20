@@ -16,3 +16,11 @@ button.submit {
     border: solid 1px black;
     margin: 10px;
 }
+
+button.back {
+    position: fixed;
+    top: 90px;
+    left: 30px;
+    padding: 0;
+    margin: 0;
+}

@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import Modeler from "bpmn-js/lib/Modeler";
+import BpmnModeler from 'bpmn-js/lib/Modeler';
 import diagramXML from './resources/newDiagram.bpmn';
 import './BpmnModelViewer.css';
 import {database} from "./models/database";
@@ -23,7 +23,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
     useEffect(() => {
         const container = document.getElementById('js-drop-zone');
 
-        modelerRef.current = new Modeler({
+        modelerRef.current = new BpmnModeler({
             container: canvas,
             keyboard: {
                 bindTo: document,
@@ -50,6 +50,9 @@ const BpmnModelViewer = (selectedPrinciples) => {
             } catch (err) {
                 container.classList.remove('with-diagram');
                 container.classList.add('with-error');
+
+                container.find('.error pre').text(err.message);
+
                 console.error(err);
             }
         }
@@ -86,7 +89,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
             window.alert('Looks like you use an older browser that does not support drag and drop. ' +
                 'Try using Chrome, Firefox, or the Internet Explorer > 10.');
         } else {
-            registerFileDrop(openDiagram);
+            registerFileDrop(container, openDiagram);
         }
 
         document.addEventListener('DOMContentLoaded', function () {

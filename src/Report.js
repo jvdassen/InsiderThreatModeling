@@ -1,17 +1,76 @@
 import {SecurityPrinciples} from "./models/securityPrinciples";
+import {useEffect, useState} from "react";
 
 export const Report = (data) => {
     const securityPrinciples = Object.values(SecurityPrinciples);
     console.log(data);
+    const [rankingThreats, setRankingThreats] = useState([])
+    const [rankingElements, setRankingOfElements] = useState([])
 
-    const makeRankingOfElements = () => {
+    useEffect(() => {
+        //THREATS
+        // Step 1: Count occurrences of elements per threat
+        const threatCounts = data.data.reduce((counts, element) => {
+            const {threat, elements} = element;
+            counts[threat] = elements.length;
+            return counts;
+        }, {});
 
-    }
-    const makeRankingOfThreats = () => {
-        
-    }
+        // Step 2: Convert counts to an array of objects
+        const threatRanking = Object.keys(threatCounts).map((threat) => ({
+            threat,
+            count: threatCounts[threat],
+        }));
+
+        // Step 3: Sort the threats based on count
+        threatRanking.sort((a, b) => b.count - a.count);
+        setRankingThreats(threatRanking);
+
+        //ELEMENTS
+        // Step 1: Count occurrences of individual elements
+        const elementCounts = data.data.reduce((counts, element) => {
+            const {elements} = element;
+            console.log("Elements", elements)
+            elements.forEach((el) => {
+                const name = el.businessObject ? el.businessObject.name : el.id;
+                counts[name] = (counts[name] || 0) + 1;
+            });
+            return counts;
+        }, {});
+
+        // Step 2: Convert counts to an array of objects
+        const elementRanking = Object.keys(elementCounts).map((element) => ({
+            element,
+            count: elementCounts[element],
+        }));
+
+        // Step 3: Sort the array based on count
+        elementRanking.sort((a, b) => b.count - a.count);
+
+        // Now, elementRanking contains the elements sorted by the number of occurrences
+        console.log(elementRanking);
+        setRankingOfElements(elementRanking);
+
+
+    }, [data.data]);
+
     return (
-        <div className="flex">
+        <div className="flex-left">
+            <div className="spacer"/>
+            <h1>Threat Ranking</h1>
+            {
+                rankingThreats.map((threat, index) => (
+                    <div>{(index + 1) + ". " + threat.threat + " (" + threat.count + ")"}</div>
+                ))}
+            <div className="spacer"/>
+            <h1>BPMN Element Ranking</h1>
+            {
+                rankingElements.map((threat, index) => (
+                    <div>{(index + 1) + ". " + threat.element + " (" + threat.count + ")"}</div>
+                ))}
+            <div className="spacer"/>
+            <div className="spacer"/>
+            <div className="spacer"/>
             {securityPrinciples.map(securityPrinciple => {
                 const threats = data.data.filter(entry => entry.principle === securityPrinciple);
                 if (threats.length > 0) {
