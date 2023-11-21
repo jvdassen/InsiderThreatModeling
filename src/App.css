@@ -210,6 +210,8 @@ button.submit {
     color: #ffffff;
     border: solid 1px black;
     margin: 10px;
+    font-weight: 700;
+    width: 240px;
 }
 
 button.report {
@@ -220,6 +222,8 @@ button.report {
     right: 24px;
     padding: 0;
     margin: 0;
+    font-weight: 700;
+    width: 240px;
 }
 
 button.back {
@@ -274,7 +278,7 @@ button.multi-select-box {
 .drop-down-box {
     display: flex;
     flex-direction: column;
-    width: 360px;
+    width: 300px;
     align-content: center;
 
     :hover {

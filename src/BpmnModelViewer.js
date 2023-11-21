@@ -3,6 +3,7 @@ import BpmnModeler from 'bpmn-js/lib/Modeler';
 import diagramXML from './resources/newDiagram.bpmn';
 import {database} from "./models/database";
 import {Report} from "./Report";
+import {ArrowSVG} from "./resources/ArrowSVG";
 
 const BpmnModelViewer = (selectedPrinciples) => {
     const [isDiagramLoaded, setDiagramLoaded] = useState(false);
@@ -18,6 +19,10 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
     const canvas = document.getElementById("js-canvas");
     const modelerRef = useRef(null);
+    const [rankingElements, setRankingOfElements] = useState([]);
+    const color = ['#ff0000', '#da0000', '#990001', '#6a0000', '#450001', '#260000']
+    const [colorIndex, setColorIndex] = useState([]);
+    const [showThreat, setShowThreat] = useState([]);
 
     useEffect(() => {
         const container = document.getElementById('js-drop-zone');
@@ -149,14 +154,20 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 timer = setTimeout(fn, timeout);
             };
         }
-    }, [isDiagramLoaded, canvas]);
 
-    const colorModel = (elements, color) => {
+    }, [isDiagramLoaded, canvas, diagramXML]);
+
+    const colorModel = (elements, color, repaint) => {
         const elementRegistry = modelerRef.current.get('elementRegistry');
         const modeling = modelerRef.current.get('modeling');
         const allElements = Object.values(elementRegistry._elements).map(entry => entry.element);
-        modeling.setColor(allElements, {stroke: '#000000'});
-        modeling.setColor(elements, {stroke: color});
+        if (repaint) {
+            modeling.setColor(allElements, {stroke: '#000000'})
+        }
+        if (elements.length > 0) {
+            modeling.setColor(elements, {stroke: color});
+        }
+
     }
 
     function onShowThreats() {
@@ -246,18 +257,67 @@ const BpmnModelViewer = (selectedPrinciples) => {
         const threatsOfPrinciple = allThreatsFound.find(p => p.principle === securityPrinciple);
         const elementsConnectedToThreat = threatsOfPrinciple.threats.find(p => p.threat === t);
         let elementsToColor = elementsConnectedToThreat.elements;
-        colorModel(elementsToColor, '#ff6600');
+        colorModel(elementsToColor, '#ff6600', true);
         setElementsConnectedToCurrentThreat(elementsToColor);
     }
 
     const onShowReport = () => {
-        let elementsToColor = [];
         setReportShown(true);
+
+        let elementsToColor = [];
         finalElementSelection.map(e => {
             elementsToColor.push(...e.elements)
         })
-        console.log("EES", elementsToColor);
-        colorModel(elementsToColor, '#ff6600');
+        //reset color
+        colorModel(elementsToColor, '#000000', true)
+
+        //ELEMENTS
+        // Step 1: Count occurrences of individual elements
+        const elementCounts = finalElementSelection.reduce((threatsPerElement, element) => {
+            const {elements} = element;
+            const threat = element.threat;
+            elements.forEach((el) => {
+                const name = el.businessObject ? el.businessObject.name : el.id;
+                // counts[name] = (counts[name] || 0) + 1;
+                if (!threatsPerElement[name]) {
+                    threatsPerElement[name] = []; // Initialize the array if not already present
+                }
+                threatsPerElement[name].push(threat);
+            });
+            return threatsPerElement;
+        }, {});
+
+        // Step 2: Convert counts to an array of objects
+        const elementRanking = Object.keys(elementCounts).map((element) => ({
+            element,
+            count: elementCounts[element].length,
+            threats: elementCounts[element]
+        }));
+
+        // Step 3: Sort the array based on count
+        elementRanking.sort((a, b) => b.count - a.count);
+
+
+        const colorCount = []
+        elementRanking.map(entry => {
+            if (!colorCount.includes(entry.count)) {
+                colorCount.push(entry.count);
+            }
+        })
+        setColorIndex(colorCount);
+
+        finalElementSelection.map((element) => {
+            const {elements} = element;
+            elements.map((el) => {
+                const rankedElement = elementRanking.find(e => e.element === el.businessObject.name || e.element === el.id)
+                if (rankedElement) {
+                    const i = colorCount.indexOf(rankedElement.count);
+                    colorModel([el], color[i], false);
+                }
+            });
+        })
+        // Now, elementRanking contains the elements sorted by the number of occurrences
+        setRankingOfElements(elementRanking);
     }
 
     const onThreatSelected = (principleSelected, threatSelected) => {
@@ -308,6 +368,13 @@ const BpmnModelViewer = (selectedPrinciples) => {
          */
     }
 
+    const handleItemClick = (index) => {
+        setShowThreat((prevState) => {
+            const newState = [...prevState];
+            newState[index] = !newState[index];
+            return newState;
+        });
+    };
     return (
         <div className="parent-container">
             <div className="content" id="js-drop-zone">
@@ -328,7 +395,8 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 </div>
                 <div className="canvas" id="js-canvas"></div>
             </div>
-            {allThreatsFound.length > 0 && !reportShown ? (
+            {allThreatsFound.length > 0 ? (
+                !reportShown ? (
                     <div className="threat-box">
                         <h1>
                             Threats found:
@@ -348,65 +416,93 @@ const BpmnModelViewer = (selectedPrinciples) => {
                                             key={t.threat.toString()}
                                             onClick={() => onThreatSelected(p, t)}>
                                             {t.threat}
-                                        </button>
-                                    ))}
+                                        </button>))}
                                 </div>
-                            </div>
-                        ))}
-                    </div>) :
-                null}
+                            </div>))}
+                    </div>
+                ) : (
+                    <div className="threat-box">
+                        <div className="spacer"/>
+                        <h1>Identified Elements</h1>
+                        <div className="drop-down-box">
+                            {rankingElements.map((threat, index) => {
+                                const i = colorIndex.indexOf(threat.count);
+                                return (
+                                    <div
+                                        className="drop-down-item"
+                                        style={{
+                                            borderColor: color[i],
+                                            flexDirection: showThreat[index] ? "column" : "row",
+                                            alignItems: showThreat[index] ? "flex-start" : "center",
+                                            color: color[i]
+                                        }}
+                                        onClick={() => handleItemClick(index)}
+                                    >
+                                        {(index + 1) + ". " + threat.element + " (" + threat.count + ")"}
+                                        {showThreat[index] ? (
+                                            <div>
+                                                <div className="spacer"/>
+                                                {threat.threats.map(t => (
+                                                    <div className="dropped-down">
+                                                        {t}
+                                                    </div>
+
+                                                ))}
+                                            </div>
+                                        ) : (<ArrowSVG/>)}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                )) : null}
             {reportShown ?
                 <Report data={finalElementSelection}/>
-                : (
-                    allThreatsFound.length > 0 ? (
-                            <>
-                                <div className="select-elements">
-                                    <div className="spacer"/>
-                                    <h1>
-                                        Select BPMN elements:
-                                    </h1>
-                                    <text>
-                                        Please revise the threats and decide for each threat which elements in the
-                                        business process that could be problematic for the threats.
-                                    </text>
-                                    <h2>
-                                        {currentThreatAndPrinciple.threat}
-                                    </h2>
-                                    {!submitted ?
-                                        <div
-                                            className="multi-select">
-                                            {elementsConnectedToThreat.map(element => (
-                                                    <button
-                                                        className="multi-select-box"
-                                                        key={element.id}
-                                                        onClick={() => onElementSelected(element)}>
-                                                        <div className="check-box">
-                                                            {selectedElements.includes(element) ? (
-                                                                <div className="check-box-fill"/>
-                                                            ) : null}
-
-                                                        </div>
-                                                        {element.businessObject.name ? element.businessObject.name : element.id}
-                                                    </button>
-                                                )
-                                            )}
-                                            <button className="submit" onClick={() => onSubmit()}>
-                                                Submit
+                : (allThreatsFound.length > 0 ? (
+                        <>
+                            <div className="select-elements">
+                                <div className="spacer"/>
+                                <h1>
+                                    Select BPMN elements:
+                                </h1>
+                                <text>
+                                    Please revise the threats and decide for each threat which elements in the
+                                    business process that could be problematic for the threats.
+                                </text>
+                                <h2>
+                                    {currentThreatAndPrinciple.threat}
+                                </h2>
+                                {!submitted ?
+                                    <div
+                                        className="multi-select">
+                                        {elementsConnectedToThreat.map(element => (
+                                            <button
+                                                className="multi-select-box"
+                                                key={element.id}
+                                                onClick={() => onElementSelected(element)}>
+                                                <div className="check-box">
+                                                    {selectedElements.includes(element) ? (
+                                                        <div className="check-box-fill"/>
+                                                    ) : null}
+                                                </div>
+                                                {element.businessObject.name ? element.businessObject.name : element.id}
                                             </button>
+                                        ))}
+                                        <button className="submit" onClick={() => onSubmit()}>
+                                            Submit
+                                        </button>
 
-                                        </div>
-                                        : null}
-                                </div>
-                                <button className="report" onClick={() => onShowReport()}>
-                                    Show Report
-                                </button>
-                            </>
-                        ) :
-                        <button className={"submit"} onClick={() => onShowThreats()}>
-                            Show Threats
-                        </button>
-                )}
-
+                                    </div>
+                                    : null}
+                            </div>
+                            <button className="report" onClick={() => onShowReport()}>
+                                Show Report
+                            </button>
+                        </>) :
+                    <button className={"submit"} onClick={() => onShowThreats()}>
+                        Show Threats
+                    </button>)}
         </div>
     );
 };

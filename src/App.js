@@ -54,6 +54,7 @@ function App() {
                             <div className="flex-column">
                                 <button style={{
                                     backgroundColor: isConfidentialitySelected ? '#709eff' : null,
+                                    fontWeight: isConfidentialitySelected ? 700 : 400,
                                     margin: "8px"
                                 }}
                                         onClick={() => {
@@ -63,6 +64,7 @@ function App() {
                                 </button>
                                 <button style={{
                                     backgroundColor: isIntegritySelected ? '#709eff' : null,
+                                    fontWeight: isIntegritySelected ? 700 : 400,
                                     margin: "8px"
                                 }}
                                         onClick={() => {
@@ -72,6 +74,7 @@ function App() {
                                 </button>
                                 <button style={{
                                     backgroundColor: isAvailabilitySelected ? '#709eff' : null,
+                                    fontWeight: isAvailabilitySelected ? 700 : 400,
                                     margin: "8px"
                                 }}
                                         onClick={() => {
@@ -81,6 +84,7 @@ function App() {
                                 </button>
                                 <button style={{
                                     backgroundColor: isAccountabilitySelected ? '#709eff' : null,
+                                    fontWeight: isAccountabilitySelected ? 700 : 400,
                                     margin: "8px"
                                 }}
                                         onClick={() => {
@@ -88,11 +92,14 @@ function App() {
                                         }}>
                                     {SecurityPrinciples.accountability}
                                 </button>
-                                <button
-                                    style={{backgroundColor: isAuthenticitySelected ? '#709eff' : null, margin: "10px"}}
-                                    onClick={() => {
-                                        setIsAuthenticitySelected(!isAuthenticitySelected)
-                                    }}>
+                                <button style={{
+                                    backgroundColor: isAuthenticitySelected ? '#709eff' : null,
+                                    fontWeight: isAuthenticitySelected ? 700 : 400,
+                                    margin: "10px"
+                                }}
+                                        onClick={() => {
+                                            setIsAuthenticitySelected(!isAuthenticitySelected)
+                                        }}>
                                     {SecurityPrinciples.authenticity}
                                 </button>
                             </div>
