@@ -3,7 +3,7 @@ import {SecurityPrinciples} from "./models/securityPrinciples";
 export const Report = (data) => {
     const securityPrinciples = Object.values(SecurityPrinciples);
     return (
-        <div className="flex-left">
+        <div className="select-elements">
             <div className="spacer"/>
             {//TODO: implement descriptions
                 securityPrinciples.map(securityPrinciple => {
@@ -13,13 +13,17 @@ export const Report = (data) => {
                             <>
                                 <h1>{securityPrinciple}</h1>
                                 {threats.map(threat => (
-                                    <>
-                                        <h2>{threat.threat}</h2>
-                                        {threat.elements.map(element => (
-                                                <div>{element.businessObject.name ? element.businessObject.name : element.id}</div>
-                                            )
-                                        )}
-                                    </>
+                                    threat.elements.length > 0 ?
+                                        <>
+                                            <h2>{threat.threat}</h2>
+                                            <h3>Elements</h3>
+                                            {threat.elements.map(element => (
+                                                    <div>{element.businessObject.name ? element.businessObject.name : element.id}</div>
+                                                )
+                                            )}
+                                            <h3>Description</h3>
+                                        </>
+                                        : null
                                 ))}
                             </>
                         );

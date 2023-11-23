@@ -5,24 +5,31 @@ import {database} from "./models/database";
 import {Report} from "./Report";
 import {ArrowSVG} from "./resources/ArrowSVG";
 
+const COLORS = ['#ff0000', '#ce0002', '#990001', '#6a0000', '#450001', '#260000']
+
+
 const BpmnModelViewer = (selectedPrinciples) => {
+    const canvas = document.getElementById("js-canvas");
+    const modelerRef = useRef(null);
+
     const [isDiagramLoaded, setDiagramLoaded] = useState(false);
     const [allThreatsFound, setAllThreatsFound] = useState([]);
     const [currentThreatAndPrinciple, setCurrentThreatAndPrinciple] = useState({});
     const [elementsConnectedToThreat, setElementsConnectedToCurrentThreat] = useState([]);
+
     //elements in currently selected threat
     const [selectedElements, setSelectedElements] = useState([]);
     //subset of selected elements: all that are marked as important for the threat
     const [finalElementSelection, setFinalElementSelection] = useState([]);
+
     const [reportShown, setReportShown] = useState(false);
     const [submitted, setSubmitted] = useState(false)
 
-    const canvas = document.getElementById("js-canvas");
-    const modelerRef = useRef(null);
+    //Report
     const [rankingElements, setRankingOfElements] = useState([]);
-    const color = ['#ff0000', '#da0000', '#990001', '#6a0000', '#450001', '#260000']
     const [colorIndex, setColorIndex] = useState([]);
-    const [showThreat, setShowThreat] = useState([]);
+    const [showThreats, setShowThreats] = useState([]);
+
 
     useEffect(() => {
         const container = document.getElementById('js-drop-zone');
@@ -36,7 +43,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
             additionalModules: [
                 {
                     palette: ["value", {}],
-                    paletteProvider: ["value", {}]
+                    paletteProvider: ["value", {}],
                 }
             ]
         });
@@ -155,48 +162,63 @@ const BpmnModelViewer = (selectedPrinciples) => {
             };
         }
 
-    }, [isDiagramLoaded, canvas, diagramXML]);
+    }, [isDiagramLoaded, canvas]);
 
+    const getBpmnElement = (id) => {
+        const elementRegistry = modelerRef.current.get('elementRegistry');
+        const element = elementRegistry.find(bpmnElement => bpmnElement.id === id);
+        if (element) {
+            console.log(element);
+            return element;
+        }
+    }
     const colorModel = (elements, color, repaint) => {
         const elementRegistry = modelerRef.current.get('elementRegistry');
         const modeling = modelerRef.current.get('modeling');
         const allElements = Object.values(elementRegistry._elements).map(entry => entry.element);
         if (repaint) {
-            modeling.setColor(allElements, {stroke: '#000000'})
+            modeling.setColor(allElements, {stroke: null})
         }
         if (elements.length > 0) {
             modeling.setColor(elements, {stroke: color});
         }
 
     }
+    const annotateWithNumber = (name, element, number) => {
+        const modeling = modelerRef.current.get('modeling');
+
+        modeling.updateProperties(element, {
+            name: number + '. ' + name
+        });
+    }
+
 
     function onShowThreats() {
-        console.log("Security Principles:", selectedPrinciples.selectedPrinciples);
         const elementRegistry = modelerRef.current.get('elementRegistry');
-        console.log('elementRegistry', elementRegistry);
 
         selectedPrinciples.selectedPrinciples.map(principle => {
             visualizeThreats(principle, elementRegistry);
         })
-    }
 
-    async function getModel() {
-        try {
-            const {xml} = await modelerRef.current.saveXML({format: true});
-            return xml;
-        } catch (err) {
-            console.error('Error happened saving XML: ', err);
+
+        console.log(allThreatsFound);
+        if (allThreatsFound.length > 0) {
+            console.log("First threat: ", allThreatsFound[0]);
+            onThreatSelected(
+                allThreatsFound[0].principle,
+                allThreatsFound[0].threats[0].threat
+            )
         }
     }
 
     //show all elements of threats that belong to one security principle
-    const visualizeThreats = (securityPrinciple, elementRegistry) => {
+    const visualizeThreats = async (securityPrinciple, elementRegistry) => {
         //filters out all threats of the principle
         const entry = database.find(e => e.principle === securityPrinciple);
         const threats = entry.threats;
 
         let threatsFound = [];
-        threats.map(threat => {
+        threatsFound = threats.map(threat => {
             let elementsInModel = [];
             //elements that are applicable to threat
             if (threat.elements) {
@@ -235,32 +257,27 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
             }
             if (elementsInModel.length > 0) {
-                threatsFound.push({threat: threat.threat, elements: elementsInModel});
+                return ({threat: threat.threat, elements: elementsInModel});
             }
         });
         //add only threats that were actually found in diagram
-        setAllThreatsFound((prevThreats) => [...prevThreats, {
+        await setAllThreatsFound((prevThreats) => [...prevThreats, {
             principle: securityPrinciple,
-            threats: threatsFound
+            threats: threatsFound,
         }])
-        if (allThreatsFound.length > 0) {
-            console.log("First threat: ", allThreatsFound[0]);
-            setCurrentThreatAndPrinciple({
-                threat: allThreatsFound[0].threats[0].threat,
-                principle: allThreatsFound[0].principle
-            })
-        }
+
+        console.log("T", threatsFound[0].threat)
+        //onThreatSelected(securityPrinciple, threatsFound[0].threat)
     }
-    //show all elements of one threat
     const showElementsOfThreat = (securityPrinciple, t) => {
         setCurrentThreatAndPrinciple({threat: t, principle: securityPrinciple});
         const threatsOfPrinciple = allThreatsFound.find(p => p.principle === securityPrinciple);
+        console.log(allThreatsFound);
         const elementsConnectedToThreat = threatsOfPrinciple.threats.find(p => p.threat === t);
         let elementsToColor = elementsConnectedToThreat.elements;
         colorModel(elementsToColor, '#ff6600', true);
         setElementsConnectedToCurrentThreat(elementsToColor);
     }
-
     const onShowReport = () => {
         setReportShown(true);
 
@@ -288,16 +305,25 @@ const BpmnModelViewer = (selectedPrinciples) => {
         }, {});
 
         // Step 2: Convert counts to an array of objects
-        const elementRanking = Object.keys(elementCounts).map((element) => ({
-            element,
-            count: elementCounts[element].length,
-            threats: elementCounts[element]
-        }));
+        const elementRanking = Object.keys(elementCounts).map((element) => {
+            const elementRegistry = modelerRef.current.get('elementRegistry');
+            const bpmnElement = elementRegistry.find(item => item.businessObject ? item.businessObject.name === element : null);
+            if (bpmnElement) {
+                console.log(bpmnElement);
+            }
+            return ({
+                element,
+                count: elementCounts[element].length,
+                threats: elementCounts[element],
+                bpmnElementId: bpmnElement.id
+            });
+        });
 
         // Step 3: Sort the array based on count
         elementRanking.sort((a, b) => b.count - a.count);
 
 
+        //Step 4: Color elements depending on how many threats were found
         const colorCount = []
         elementRanking.map(entry => {
             if (!colorCount.includes(entry.count)) {
@@ -306,21 +332,20 @@ const BpmnModelViewer = (selectedPrinciples) => {
         })
         setColorIndex(colorCount);
 
-        finalElementSelection.map((element) => {
-            const {elements} = element;
-            elements.map((el) => {
-                const rankedElement = elementRanking.find(e => e.element === el.businessObject.name || e.element === el.id)
-                if (rankedElement) {
-                    const i = colorCount.indexOf(rankedElement.count);
-                    colorModel([el], color[i], false);
-                }
-            });
-        })
+
+        elementRanking.map((element) => {
+            const i = colorCount.indexOf(element.count);
+            const bpmnElement = getBpmnElement(element.bpmnElementId);
+            colorModel([bpmnElement], COLORS[i], false);
+            annotateWithNumber(element.element, bpmnElement, elementRanking.indexOf(element) + 1);
+        });
+
         // Now, elementRanking contains the elements sorted by the number of occurrences
         setRankingOfElements(elementRanking);
     }
 
     const onThreatSelected = (principleSelected, threatSelected) => {
+        console.log("TS: ", threatSelected)
         setSubmitted(false);
         if (finalElementSelection.find(e => e.threat === threatSelected.threat)) {
             setSelectedElements(finalElementSelection.find(e => e.threat === threatSelected.threat).elements)
@@ -362,14 +387,14 @@ const BpmnModelViewer = (selectedPrinciples) => {
         }
         setSubmitted(true);
         //TODO: go to next threat
-        /*const index = allThreatsFound.indexOf(selectedThreat);
-        console.log("index", index)
-        setSelectedThreat(allThreatsFound[index + 1]);
-         */
+
+        /* const index = allThreatsFound.indexOf(selectedThreat);
+         console.log("index", index)
+         onThreatSelected(allThreatsFound[index + 1]);*/
     }
 
     const handleItemClick = (index) => {
-        setShowThreat((prevState) => {
+        setShowThreats((prevState) => {
             const newState = [...prevState];
             newState[index] = !newState[index];
             return newState;
@@ -411,6 +436,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
                                         <button
                                             style={{
                                                 backgroundColor: currentThreatAndPrinciple.threat === t.threat ? '#ff6600' : null,
+                                                fontWeight: currentThreatAndPrinciple.threat === t.threat ? 700 : 400,
                                                 margin: "8px"
                                             }}
                                             key={t.threat.toString()}
@@ -425,24 +451,24 @@ const BpmnModelViewer = (selectedPrinciples) => {
                         <div className="spacer"/>
                         <h1>Identified Elements</h1>
                         <div className="drop-down-box">
-                            {rankingElements.map((threat, index) => {
-                                const i = colorIndex.indexOf(threat.count);
+                            {rankingElements.map((element, index) => {
+                                const i = colorIndex.indexOf(element.count);
                                 return (
                                     <div
                                         className="drop-down-item"
                                         style={{
-                                            borderColor: color[i],
-                                            flexDirection: showThreat[index] ? "column" : "row",
-                                            alignItems: showThreat[index] ? "flex-start" : "center",
-                                            color: color[i]
+                                            borderColor: COLORS[i],
+                                            flexDirection: showThreats[index] ? "column" : "row",
+                                            alignItems: showThreats[index] ? "flex-start" : "center",
+                                            color: COLORS[i]
                                         }}
                                         onClick={() => handleItemClick(index)}
                                     >
-                                        {(index + 1) + ". " + threat.element + " (" + threat.count + ")"}
-                                        {showThreat[index] ? (
+                                        {(index + 1) + ". " + element.element + " (" + element.count + ")"}
+                                        {showThreats[index] ? (
                                             <div>
                                                 <div className="spacer"/>
-                                                {threat.threats.map(t => (
+                                                {element.threats.map(t => (
                                                     <div className="dropped-down">
                                                         {t}
                                                     </div>
@@ -500,9 +526,10 @@ const BpmnModelViewer = (selectedPrinciples) => {
                                 Show Report
                             </button>
                         </>) :
-                    <button className={"submit"} onClick={() => onShowThreats()}>
-                        Show Threats
-                    </button>)}
+                    isDiagramLoaded ?
+                        (<button className={"submit"} onClick={() => onShowThreats()}>
+                            Show Threats
+                        </button>) : null)}
         </div>
     );
 };

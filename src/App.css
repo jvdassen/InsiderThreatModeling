@@ -86,7 +86,7 @@
     display: flex;
     align-items: start;
     flex-direction: column;
-    width: 75%;
+    width: 76%;
     float: right;
     text-align: left;
     justify-content: left;
@@ -165,8 +165,6 @@ a:link {
 .buttons {
     position: fixed;
     bottom: 20px;
-    left: 20px;
-
     padding: 0;
     margin: 0;
     list-style: none;
@@ -201,8 +199,12 @@ button {
     background-color: #eeeeee;
     display: inline-block;
     height: 32px;
-    min-width: 100px;
+    min-width: 160px;
     list-style: none;
+}
+
+button:hover {
+    cursor: pointer;
 }
 
 button.submit {
@@ -211,7 +213,6 @@ button.submit {
     border: solid 1px black;
     margin: 10px;
     font-weight: 700;
-    width: 240px;
 }
 
 button.report {
@@ -239,11 +240,6 @@ button.back {
     flex-direction: column;
     width: 300px;
     align-content: center;
-
-    :hover {
-        cursor: pointer;
-        background-color: #d9e3ff;
-    }
 }
 
 
@@ -257,6 +253,10 @@ button.multi-select-box {
     flex-direction: row;
     align-items: center;
     height: 40px;
+}
+
+button.multi-select-box:hover {
+    background-color: #d9e3ff;
 }
 
 .check-box {
@@ -280,10 +280,6 @@ button.multi-select-box {
     flex-direction: column;
     width: 300px;
     align-content: center;
-
-    :hover {
-        cursor: pointer;
-    }
 }
 
 .drop-down-item {
@@ -297,6 +293,10 @@ button.multi-select-box {
     margin: 4px;
     padding: 16px;
     font-weight: 700;
+}
+
+.drop-down-item:hover {
+    cursor: pointer;
 }
 
 .dropped-down {
