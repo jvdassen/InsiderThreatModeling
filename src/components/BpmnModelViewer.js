@@ -1,9 +1,9 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import BpmnModeler from 'bpmn-js/lib/Modeler';
-import diagramXML from './resources/newDiagram.bpmn';
-import {database} from "./models/database";
+import {database} from "../models/database";
 import {Report} from "./Report";
-import {ArrowSVG} from "./resources/ArrowSVG";
+import {ArrowSVG} from "../resources/ArrowSVG";
+import newDiagramPath from "../resources/newDiagram.bpmn";
 
 const COLORS = ['#ff0000', '#ce0002', '#990001', '#6a0000', '#450001', '#260000']
 
@@ -30,6 +30,54 @@ const BpmnModelViewer = (selectedPrinciples) => {
     const [colorIndex, setColorIndex] = useState([]);
     const [showThreats, setShowThreats] = useState([]);
 
+    const handleDragOver = useCallback((e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    }, []);
+
+    const handleFileSelect = useCallback((e, callback, container) => {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const files = e.dataTransfer.files;
+        const file = files[0];
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            const xml = e.target.result;
+            callback(xml, container);
+        };
+
+        reader.readAsText(file);
+
+    }, []);
+
+    const openDiagram = useCallback(async (xml, container) => {
+
+        try {
+            await modelerRef.current.importXML(xml);
+
+            container.classList.remove('with-error');
+            container.classList.add('with-diagram');
+
+            setDiagramLoaded(true);
+
+            //Fit the viewport
+            const canvas = modelerRef.current.get("canvas");
+            canvas.zoom("fit-viewport");
+
+        } catch (err) {
+            container.classList.remove('with-diagram');
+            container.classList.add('with-error');
+
+            container.find('.error pre').text(err.message);
+
+            console.error(err);
+        }
+    }, []);
+
 
     useEffect(() => {
         const container = document.getElementById('js-drop-zone');
@@ -48,121 +96,27 @@ const BpmnModelViewer = (selectedPrinciples) => {
             ]
         });
 
-        function createNewDiagram() {
-            openDiagram(diagramXML);
-        }
 
-        async function openDiagram(xml) {
+        // Needed to preload modeler to make drag & drop work
+        const loadDiagram = async () => {
             try {
-                await modelerRef.current.importXML(xml);
-                container.classList.remove('with-error');
-                container.classList.add('with-diagram');
-                setDiagramLoaded(true);
-
-                //Fit the viewport
-                const canvas = modelerRef.current.get("canvas");
-                canvas.zoom("fit-viewport");
+                const response = await fetch(newDiagramPath);
+                const xml = await response.text();
+                console.log(xml);
+                await openDiagram(xml, container);
             } catch (err) {
-                container.classList.remove('with-diagram');
-                container.classList.add('with-error');
-                container.find('.error pre').text(err.message);
-
                 console.error(err);
             }
-        }
+        };
 
-        function registerFileDrop(container, callback) {
-            function handleFileSelect(e) {
-                e.stopPropagation();
-                e.preventDefault();
+        loadDiagram();
 
-                const files = e.dataTransfer.files;
-                const file = files[0];
+        container.addEventListener('dragover', (e) => handleDragOver(e), false);
+        container.addEventListener('drop', (e) => handleFileSelect(e, openDiagram, container), false);
 
-                const reader = new FileReader();
+        container.addEventListener('drop', (e) => handleFileSelect(e, openDiagram, container), false);
 
-                reader.onload = function (e) {
-                    const xml = e.target.result;
-                    callback(xml);
-                };
-
-                reader.readAsText(file);
-            }
-
-            function handleDragOver(e) {
-                e.stopPropagation();
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'copy';
-            }
-
-            container.addEventListener('dragover', handleDragOver, false);
-            container.addEventListener('drop', handleFileSelect, false);
-        }
-
-        if (!window.FileList || !window.FileReader) {
-            window.alert('Looks like you use an older browser that does not support drag and drop. ' +
-                'Try using Chrome, Firefox, or the Internet Explorer > 10.');
-        } else {
-            registerFileDrop(container, openDiagram);
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            document.getElementById('js-create-diagram').addEventListener('click', function (e) {
-                e.stopPropagation();
-                e.preventDefault();
-                createNewDiagram();
-            });
-
-            const downloadLink = document.getElementById('js-download-diagram');
-            const downloadSvgLink = document.getElementById('js-download-svg');
-
-            function setEncoded(link, name, data) {
-                const encodedData = encodeURIComponent(data);
-                console.log(encodedData);
-
-                if (data) {
-                    link.classList.add('active');
-                    link.href = `data:application/bpmn20-xml;charset=UTF-8,${encodedData}`;
-                    link.download = name;
-                } else {
-                    link.classList.remove('active');
-                }
-            }
-
-            const exportArtifacts = debounce(async function () {
-                try {
-                    const {svg} = await modelerRef.current.saveSVG();
-                    setEncoded(downloadSvgLink, 'diagram.svg', svg);
-                } catch (err) {
-                    console.error('Error happened saving svg: ', err);
-                    setEncoded(downloadSvgLink, 'diagram.svg', null);
-                }
-
-                try {
-                    const {xml} = await modelerRef.current.saveXML({format: true});
-                    setEncoded(downloadLink, 'diagram.bpmn', xml);
-                } catch (err) {
-                    console.error('Error happened saving XML: ', err);
-                    setEncoded(downloadLink, 'diagram.bpmn', null);
-                }
-            }, 500);
-
-            modelerRef.current.on('commandStack.changed', exportArtifacts);
-        });
-
-        function debounce(fn, timeout) {
-            let timer;
-
-            return function () {
-                if (timer) {
-                    clearTimeout(timer);
-                }
-
-                timer = setTimeout(fn, timeout);
-            };
-        }
-
-    }, [isDiagramLoaded, canvas]);
+    }, [canvas, handleDragOver, handleFileSelect, openDiagram]);
 
     const getBpmnElement = (id) => {
         const elementRegistry = modelerRef.current.get('elementRegistry');
@@ -199,16 +153,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
         selectedPrinciples.selectedPrinciples.map(principle => {
             visualizeThreats(principle, elementRegistry);
         })
-
-
-        console.log(allThreatsFound);
-        if (allThreatsFound.length > 0) {
-            console.log("First threat: ", allThreatsFound[0]);
-            onThreatSelected(
-                allThreatsFound[0].principle,
-                allThreatsFound[0].threats[0].threat
-            )
-        }
     }
 
     //show all elements of threats that belong to one security principle
@@ -249,6 +193,9 @@ const BpmnModelViewer = (selectedPrinciples) => {
                         //filters out all elements of the same type (e.g. UserTask) in the provided bpmn model
                         elements = elementRegistry.filter(e => e.type === 'bpmn:' + bpmnElement);
                     }
+                    console.log("threat", threat.threat)
+
+                    console.log("ELEMENTS", elements)
                     //if there is an element in the elementregistry for the threat, add the threat to threatsFound
                     if (elements.length > 0) {
                         elementsInModel.push(...elements);
@@ -256,17 +203,16 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 });
 
             }
+            console.log("elements in model", elementsInModel)
             if (elementsInModel.length > 0) {
                 return ({threat: threat.threat, elements: elementsInModel});
             }
         });
         //add only threats that were actually found in diagram
-        await setAllThreatsFound((prevThreats) => [...prevThreats, {
+        setAllThreatsFound((prevThreats) => [...prevThreats, {
             principle: securityPrinciple,
-            threats: threatsFound,
+            threats: threatsFound.filter(t => t !== undefined),
         }])
-
-        console.log("T", threatsFound[0].threat)
         //onThreatSelected(securityPrinciple, threatsFound[0].threat)
     }
     const showElementsOfThreat = (securityPrinciple, t) => {
@@ -318,7 +264,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 bpmnElementId: bpmnElement.id
             });
         });
-
         // Step 3: Sort the array based on count
         elementRanking.sort((a, b) => b.count - a.count);
 
@@ -345,7 +290,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
     }
 
     const onThreatSelected = (principleSelected, threatSelected) => {
-        console.log("TS: ", threatSelected)
         setSubmitted(false);
         if (finalElementSelection.find(e => e.threat === threatSelected.threat)) {
             setSelectedElements(finalElementSelection.find(e => e.threat === threatSelected.threat).elements)
@@ -406,7 +350,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
                 <div className="message intro">
                     <div className="note">
                         Drop BPMN diagram from your desktop
-                        {/*or <a id="js-create-diagram" href>create a new diagram</a>*/} to get started.
                     </div>
                 </div>
                 <div className="message error">
@@ -426,25 +369,30 @@ const BpmnModelViewer = (selectedPrinciples) => {
                         <h1>
                             Threats found:
                         </h1>
-                        {allThreatsFound.map(p => (
-                            <div key={p.principle}>
-                                <h2>
-                                    {Object.values(p.principle)}
-                                </h2>
-                                <div className="flex-column">
-                                    {p.threats.map(t => (
-                                        <button
-                                            style={{
-                                                backgroundColor: currentThreatAndPrinciple.threat === t.threat ? '#ff6600' : null,
-                                                fontWeight: currentThreatAndPrinciple.threat === t.threat ? 700 : 400,
-                                                margin: "8px"
-                                            }}
-                                            key={t.threat.toString()}
-                                            onClick={() => onThreatSelected(p, t)}>
-                                            {t.threat}
-                                        </button>))}
-                                </div>
-                            </div>))}
+                        {allThreatsFound.map(p => {
+                            console.log("P", p)
+
+                            return (
+                                <div key={p.principle}>
+                                    <h2>
+                                        {Object.values(p.principle)}
+                                    </h2>
+                                    <div className="flex-column">
+                                        {p.threats.map(t => (
+                                            <button
+                                                style={{
+                                                    backgroundColor: currentThreatAndPrinciple.threat === t.threat ? '#ff6600' : null,
+                                                    fontWeight: currentThreatAndPrinciple.threat === t.threat ? 700 : 400,
+                                                    margin: "8px"
+                                                }}
+                                                key={t.threat.toString()}
+                                                onClick={() => onThreatSelected(p, t)}>
+                                                {t.threat}
+                                            </button>))}
+                                    </div>
+                                </div>)
+                        })
+                        }
                     </div>
                 ) : (
                     <div className="threat-box">
@@ -492,10 +440,10 @@ const BpmnModelViewer = (selectedPrinciples) => {
                                 <h1>
                                     Select BPMN elements:
                                 </h1>
-                                <text>
+                                <div>
                                     Please revise the threats and decide for each threat which elements in the
                                     business process that could be problematic for the threats.
-                                </text>
+                                </div>
                                 <h2>
                                     {currentThreatAndPrinciple.threat}
                                 </h2>
@@ -525,30 +473,18 @@ const BpmnModelViewer = (selectedPrinciples) => {
                             <button className="report" onClick={() => onShowReport()}>
                                 Show Report
                             </button>
+
                         </>) :
                     isDiagramLoaded ?
-                        (<button className={"submit"} onClick={() => onShowThreats()}>
-                            Show Threats
-                        </button>) : null)}
+                        (
+                            <button className={"submit"} onClick={() => onShowThreats()}>
+                                Show Threats
+                            </button>
+                        ) : null)}
+
         </div>
     );
 };
 
 export default BpmnModelViewer;
 
-
-{/*  <ul className="buttons">
-                <li>download</li>
-                <li>
-                    <a id="js-download-diagram" href title="download BPMN diagram">
-                        BPMN diagram
-                    </a>
-                </li>
-                <li>
-                    <a id="js-download-svg" href title="download as SVG image">
-                        SVG image
-                    </a>
-                </li>
-
-             </ul>*/
-}
