@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import BpmnModelViewer from "./BpmnModelViewer";
+import BpmnModelViewer from "./components/BpmnModelViewer";
 import "bpmn-js/dist/assets/diagram-js.css";
 import "bpmn-js/dist/assets/bpmn-font/css/bpmn-embedded.css";
 import './App.css';
@@ -16,8 +16,6 @@ function App() {
     const [isAuthenticitySelected, setIsAuthenticitySelected] = useState(false);
 
     const handleSubmit = () => {
-        console.log(isConfidentialitySelected, isIntegritySelected, isAvailabilitySelected, isAccountabilitySelected, isAuthenticitySelected)
-
         let updatedPrinciples = [];
         if (isConfidentialitySelected) updatedPrinciples.push(SecurityPrinciples.confidentiality);
         if (isIntegritySelected) updatedPrinciples.push(SecurityPrinciples.integrity);
