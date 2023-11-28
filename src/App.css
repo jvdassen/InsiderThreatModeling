@@ -169,11 +169,13 @@ a:link {
 }
 
 .buttons {
-    position: fixed;
-    bottom: 20px;
+    position: absolute;
+    top: 24px;
+    right: 24px;
     padding: 0;
     margin: 0;
     list-style: none;
+    font-size: 12px;
 }
 
 .buttons > li {
@@ -182,19 +184,18 @@ a:link {
 }
 
 .buttons > li > a {
-    background: #DDD;
-    border: solid 1px #666;
     display: inline-block;
     padding: 5px;
+    background-color: #3457c3;
+    color: #ffffff;
+    border: solid 1px black;
+    font-weight: 700;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 160px;
+    height: 20px;
 
-}
-
-.buttons a {
-    opacity: 0.3;
-}
-
-.buttons a.active {
-    opacity: 1.0;
 
 }
 
