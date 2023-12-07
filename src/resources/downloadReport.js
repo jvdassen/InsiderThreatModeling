@@ -45,7 +45,9 @@ const styles = StyleSheet.create({
         fontWeight: 700,
     },
     subtitle: {
-        margin: 12,
+        marginLeft: 12,
+        marginRight: 12,
+        marginBottom: 6,
         fontSize: 14,
         fontFamily: "Helvetica",
     }
@@ -54,22 +56,9 @@ const styles = StyleSheet.create({
 
 export const DownloadReport = (data) => {
     const securityPrinciples = Object.values(SecurityPrinciples);
-    console.log("SVG", data.svg)
-
-    //TODO: decide if svg should be part of report
-    const Diagram = data.svg;
-
 
     return (
         <Document>
-            {/*
-            <Page size="A4">
-                <Text style={styles.documentTitle}>
-                    Insider Threat Report
-                </Text>
-                 <Image src={Diagram}/>
-            </Page>
-            */}
             <Page size="A4">
                 <Text style={styles.documentTitle}>
                     Insider Threat Report
@@ -82,8 +71,14 @@ export const DownloadReport = (data) => {
                     </Text>
                     {data.elements.map((element, index) => (
                         <View>
-                            <Text
-                                style={styles.subtitle}> {(index + 1) + ". " + element.element + " (" + element.count + ")"}</Text>
+                            <Text style={styles.threat}>
+                                {(index + 1) + ". " + element.element + " (" + element.count + ")"}
+                            </Text>
+                            <Text style={styles.subtitle}>Threats identified</Text>
+                            {element.threats.map((threat) => (
+                                <Text style={styles.text}>{threat}</Text>
+                            ))}
+
                         </View>
                     ))
                     }
@@ -96,9 +91,9 @@ export const DownloadReport = (data) => {
                 <View style={styles.body}>
                     <Text style={styles.title}>Identified Threats</Text>
                     <Text style={styles.text}>
-                        In the part below you find all the threats that were found by the Insider Threat
+                        In the part below you find a description for each threat that was found by the Insider Threat
                         Modeler. As this prototype does not include any suggestions for controls or
-                        countermeasures, please find a cyber security expert to decide if further measures are
+                        countermeasures, please discuss with a cyber security expert to decide if further measures are
                         needed to mitigate the threats.
                     </Text>
                     {securityPrinciples.map((securityPrinciple) => {
@@ -112,15 +107,8 @@ export const DownloadReport = (data) => {
                                         threat.elements.length > 0 ?
                                             <>
                                                 <Text style={styles.threat}>{threat.threat}</Text>
-
                                                 <Text
                                                     style={styles.text}>{threatsInDatabase.find(t => t.threat === threat.threat).description}</Text>
-                                                <Text style={styles.subtitle}>Elements identified</Text>
-                                                {threat.elements.map(element => (
-                                                        <Text
-                                                            style={styles.text}>{element.businessObject.name ? element.businessObject.name : element.id}</Text>
-                                                    )
-                                                )}
                                             </>
                                             : null
                                     ))}

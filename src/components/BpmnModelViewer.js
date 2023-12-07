@@ -108,7 +108,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
 
 
         // Needed to preload modeler to make drag & drop work -
-        //TODO: only the first time..
         const loadDiagram = async () => {
             try {
                 const response = await fetch(newDiagramPath);
@@ -308,7 +307,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
                     }
                     fileName="insiderThreatReport">
                     {({loading}) => (loading ? <div>Loading Document...</div> :
-                        <button className="submit">Download</button>)}
+                        <button className="submit">PDF report</button>)}
                 </PDFDownloadLink>)
         }
     }, [rankingElements, svgDiagram]);
@@ -423,11 +422,6 @@ const BpmnModelViewer = (selectedPrinciples) => {
             }])
         }
         setSubmitted(true);
-        //TODO: go to next threat
-
-        /* const index = allThreatsFound.indexOf(selectedThreat);
-         console.log("index", index)
-         onThreatSelected(allThreatsFound[index + 1]);*/
     }
 
     const handleItemClick = (index) => {
