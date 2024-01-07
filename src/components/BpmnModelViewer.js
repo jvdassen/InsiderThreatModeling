@@ -7,7 +7,7 @@ import newDiagramPath from "../resources/newDiagram.bpmn";
 import {PDFDownloadLink} from "@react-pdf/renderer";
 import {DownloadReport} from "../resources/downloadReport";
 
-const COLORS = ['#ff0000', '#ce0002', '#990001', '#6a0000', '#450001', '#260000']
+const COLORS = ['#ff0000', '#ce0002', '#990001', '#6a0000', '#450001', '#260000', '#1c0000', '#0f0000', '#000000', '#000000']
 
 
 const BpmnModelViewer = (selectedPrinciples) => {
@@ -225,6 +225,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
         }])
         //onThreatSelected(securityPrinciple, threatsFound[0].threat)
     }
+    
     const showElementsOfThreat = (securityPrinciple, t) => {
         setCurrentThreatAndPrinciple({threat: t, principle: securityPrinciple});
         const threatsOfPrinciple = allThreatsFound.find(p => p.principle === securityPrinciple);

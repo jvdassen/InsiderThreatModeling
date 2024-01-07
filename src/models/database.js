@@ -9,18 +9,18 @@ export const database = [
             {
                 threat: InsiderThreatGroups.confidentialDataAcquisition,
                 elements: [BpmnElements.dataObject, BpmnElements.dataStore],
-                description: "Data that is being stolen or used inappropriate fits within this category. The attack can target computer system, but also a web service when for instance a session is being hijacked."
+                description: "Data that is being stolen or used inappropriately its in this category. The attack can target not only a computer system but also a web service when for instance a session is being hijacked.",
             },
             {
                 threat: InsiderThreatGroups.confidentialDataView,
                 elements: [BpmnElements.dataObject, BpmnElements.dataStore, BpmnElements.receiveTask, BpmnElements.intermediateCatchEvent, BpmnElements.startEvent],
-                description: "If sensitive data is being inspected apart from the normal usage the attack belongs to confidential data view."
+                description: "If sensitive data is being inspected apart from the normal usage, the attack belongs to confidential data view."
 
             },
             {
                 threat: InsiderThreatGroups.confidentialDataTransfer,
                 elements: [BpmnElements.dataObject, BpmnElements.sendTask, BpmnElements.messageEventDefinition],
-                description: "The illegal distribution of confidential files such as password lists, financial information and other sensitive material is a part of confidential data transfer."
+                description: "The illegal distribution of confidential files such as password lists, financial information, and other sensitive material is a part of confidential data transfer."
             },
             {
                 threat: InsiderThreatGroups.unauthorizedAccessToCredentials,
@@ -36,12 +36,12 @@ export const database = [
             {
                 threat: InsiderThreatGroups.dataCorruption,
                 elements: [BpmnElements.manualTask, BpmnElements.userTask, BpmnElements.serviceTask, BpmnElements.dataObject, BpmnElements.dataStore, BpmnElements.sendTask, BpmnElements.messageEventDefinition],
-                description: "As data corruption the fraudulent modification of data can be understood. It happens when information is manipulated within either an application or also a system. Incidents in the past have shown that tampering with cookies is a widely used technique to corrupt data in an unauthorized manner."
+                description: "With data corruption, the fraudulent modification of data can be understood. It happens when information is manipulated within either an application or also a system. Incidents in the past have shown that tampering with cookies is a widely used technique to corrupt data in an unauthorized manner."
             },
             {
                 threat: InsiderThreatGroups.maliciousCodeModification,
                 elements: [BpmnElements.serviceTask],
-                description: "In software code programming small modifications can have a huge impact. Logic bombs, trojan horses and other malicious code injections are examples for this attack group."
+                description: "In software code programming small modifications can have a huge impact. Logic bombs, trojan horses, and other malicious code injections are examples of this attack group."
             },
             {
                 threat: InsiderThreatGroups.malwareInstallation,
@@ -66,17 +66,17 @@ export const database = [
             {
                 threat: InsiderThreatGroups.resourceExhaustionAttack,
                 elements: [BpmnElements.serviceTask],
-                description: "In resource exhaustion attacks, the availability of the system is being compromised. Examples that belong to this category are DoS, buffer overflow and replay attacks."
+                description: "In resource exhaustion attacks, the availability of the system is being compromised. Examples that belong to this category are DoS, buffer overflow, and replay attacks."
             },
             {
                 threat: InsiderThreatGroups.networkExhaustionAttack,
                 elements: [BpmnElements.serviceTask, BpmnElements.dataObject, BpmnElements.sendTask, BpmnElements.messageEventDefinition],
-                description: "In resource exhaustion attacks, the availability of the system is being compromised. Examples that belong to this category are DoS, buffer overflow and replay attacks."
+                description: "Unlike resource exhaustion attacks, not the system but the network is not available because of an overload. This can happen when a large amount of data is being downloaded in a small time frame such that the network is not able to process other packets."
             },
             {
                 threat: InsiderThreatGroups.dataDeletion,
                 elements: [BpmnElements.userTask, BpmnElements.serviceTask, BpmnElements.dataObject, BpmnElements.dataStore],
-                description: "The loss of data because of its destruction by an insider is summarized in the data deletion attack group."
+                description: "The loss of data because of its destruction by an insider is labeled as data deletion."
             }
         ]
     },
@@ -86,7 +86,7 @@ export const database = [
             {
                 threat: InsiderThreatGroups.systemControlCircumvention,
                 elements: [BpmnElements.userTask],
-                description: "There are various ways how system controls can be circumvented. In the sources, the altering or disabling of audit logs has been mentioned most frequently."
+                description: "There are various ways in which system controls can be circumvented. In the sources, the altering or disabling of audit logs has been mentioned most frequently."
             },
             {
                 threat: InsiderThreatGroups.unauthorizedPrivilegeElevation,
@@ -94,7 +94,7 @@ export const database = [
                 description: "In case of the modification of user access rights, privileges in a system can be elevated. This gives the user the capability to get unauthorized access to information or systems."
             },
             {
-                threat: InsiderThreatGroups.misuseOfPivileges,
+                threat: InsiderThreatGroups.misuseOfPrivileges,
                 elements: [BpmnElements.userTask],
                 description: " Even if users are allowed to access certain data or systems, they can still misuse their privileges to attack an organization. They could for instance abuse an adjustment transaction or error-correction procedures to hide their intrigues."
             }
@@ -106,7 +106,7 @@ export const database = [
             {
                 threat: InsiderThreatGroups.socialEngineeringAttack,
                 elements: [BpmnElements.sendTask],
-                description: "Attack vectors in social engineering that were found in the context of insider threats are tailgaiting, ingratiation, phishing, pretexting and baiting. These techniques are applied to deceive an employee in order to gain unauthorized access."
+                description: "Attack vectors in social engineering that were found in the context of insider threats are tailgaiting, ingratiation, phishing, pretexting, and baiting. These techniques are applied to deceive an employee in order to gain unauthorized access."
             },
             {
                 threat: InsiderThreatGroups.impersonationAttack,

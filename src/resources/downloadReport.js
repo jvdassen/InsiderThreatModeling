@@ -66,8 +66,8 @@ export const DownloadReport = (data) => {
                 <View style={styles.body}>
                     <Text style={styles.title}>Identified Elements</Text>
                     <Text style={styles.text}>
-                        The most vulnerable BPMN elements are listed here ordered according to the
-                        number the user has depicted the element as a potential attack target.
+                        The most vulnerable BPMN elements are listed below and ordered according to the
+                        number of times the user has depicted the element as a potential attack target.
                     </Text>
                     {data.elements.map((element, index) => (
                         <View>

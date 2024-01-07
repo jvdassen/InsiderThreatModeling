@@ -7,10 +7,10 @@ export const Report = (data) => {
         <div className="select-elements">
             <h1>Identified Threats</h1>
             <div className="report">
-                In the part below you find all the threats that were found by the Insider Threat
-                Modeler. As this prototype does not include any suggestions for controls or
-                countermeasures, please find a cyber security expert to decide if further measures are
-                needed to mitigate the threats.
+                In the part below each threat that was found by the Insider Threat
+                Modeler with its corresponding description ist listed. As this prototype does not include any
+                suggestions for controls or countermeasures, please find a cyber security expert to decide if further
+                measures are needed to mitigate the threats.
             </div>
             <div className="spacer"/>
             {securityPrinciples.map(securityPrinciple => {
