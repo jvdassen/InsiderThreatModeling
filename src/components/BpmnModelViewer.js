@@ -584,7 +584,7 @@ const BpmnModelViewer = (selectedPrinciples) => {
                         </>) :
                     isDiagramLoaded ?
                         (
-                            <button className={"submit"} onClick={() => onShowThreats()}>
+                            <button style={{ position: 'absolute', right: '38vw'}} className={"submit"} onClick={() => onShowThreats()}>
                                 Show Threats
                             </button>
                         ) : null)}
